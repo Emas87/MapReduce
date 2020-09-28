@@ -47,7 +47,7 @@ crear_trabajadores_nodo({Host, N}, Trabajo, Repartidor, Recolector) when N > 0 -
 
 % Repartidor ----------------------------------------------------------
 repartidor([], 0) -> 
-    io:format("repartidor termino\n"),
+    io:format("repartidor termino ~n"),
     finished;
 repartidor([], N) when N > 0 ->
     receive
@@ -57,18 +57,19 @@ repartidor([], N) when N > 0 ->
     end;
 repartidor([Llave|Llaves], NumTrabajadores) ->
     receive
-	{Worker, mas_trabajo} ->
+	  {Worker, mas_trabajo} ->
 	    Worker ! Llave,
 	    repartidor(Llaves, NumTrabajadores)
     end.
 
 % Recolector ----------------------------------------------------------
 recolector(Trabajo, 0, Cliente, Lotes) ->
-    io:format("recolector termino, enviando paquete al Cliente\n"),
+    io:format("recolector termino, enviando paquete al Cliente ~n"),
     Cliente ! {pedido, Trabajo:reduce(Lotes)};
 recolector(Trabajo, Pendientes, Cliente, Lotes) when Pendientes > 0 ->
     receive
 	{Llave, Lote} ->
+      % io:format("recolector ~p ~n", [Pendientes-1]),
 	    recolector(Trabajo, Pendientes-1, Cliente, [{Llave, Lote}| Lotes])
     end.
 
