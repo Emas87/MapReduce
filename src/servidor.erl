@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/0, stop/0, suma/6]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -35,8 +35,14 @@
 		      {error, Error :: term()} |
 		      ignore.
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+    gen_server:start_link({global, ?SERVER}, ?MODULE, [], []).
 
+stop() ->
+	gen_server:cast({global, ?MODULE}, stop).
+
+% mapreduce_modified:start(problema1, "tuplas.dat", 10, 5, 3, self() ).
+suma(ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Cliente) ->
+	gen_server:call({global, ?MODULE}, {suma,ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Cliente}).
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -54,6 +60,7 @@ start_link() ->
 			      ignore.
 init([]) ->
     process_flag(trap_exit, true),
+		io:format("~p (~p) Empezando servidor ~n", [{local, ?MODULE}, self()]),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -71,6 +78,8 @@ init([]) ->
 			 {noreply, NewState :: term(), hibernate} |
 			 {stop, Reason :: term(), Reply :: term(), NewState :: term()} |
 			 {stop, Reason :: term(), NewState :: term()}.
+handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Cliente}, _From, State) ->
+	{reply, mapreduce_modified:start(ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Cliente), State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
