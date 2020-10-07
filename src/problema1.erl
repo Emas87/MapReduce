@@ -32,6 +32,7 @@ gen_chunks(Tuple_List, Base_num_elems, 0, Chunk_List) when length(Tuple_List) ==
   lists:reverse([Tuple_List|Chunk_List]).
 
 
+
 gen_keys_reduce(Lotes) ->
   Flatten_List = lists:flatten(lists:append(lists:map(fun({_,X}) -> X end, Lotes))),
   Key_List = maps:to_list(lists:foldl(fun({K, V}, Map) -> maps:put(K, lists:append(maps:get(K, Map, []), [V]), Map) end, #{}, Flatten_List)),
