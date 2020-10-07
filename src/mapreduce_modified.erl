@@ -16,7 +16,7 @@ jefe(ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Clie
 
   {ListaTrabajadores, NumTrabajadores} = get_trabajadores(SpecTrabajoMap),
 
-  Llaves     = ModuloTrabajo:gen_keys({FileName, NumChunks}),
+  Llaves     = ModuloTrabajo:gen_keys_map({FileName, NumChunks}),
   Repartidor_Map = spawn_link(fun() -> repartidor(Llaves, NumTrabajadores) end),
   Recolector_Map = spawn_link(fun() -> recolector_map(ModuloTrabajo, SpecTrabajoReduce, length(Llaves), Cliente, []) end),
   spawn_link(fun() -> spawn_trabajadores(ModuloTrabajo, Repartidor_Map, Recolector_Map, trabajador_map, ListaTrabajadores) end).
@@ -65,8 +65,8 @@ repartidor([Llave|Llaves], NumTrabajadores) ->
 % Recolector Map----------------------------------------------------------
 recolector_map(ModuloTrabajo, SpecTrabajoReduce, 0, Cliente, Lotes) ->
   io:format("recolector de map termino, generando trabajadores para reduce ~n"),
-  Flatten_List = lists:flatten(lists:append(lists:map(fun({_,X}) -> X end, Lotes))),
-  Key_List = maps:to_list(lists:foldl(fun({K, V}, Map) -> maps:put(K, lists:append(maps:get(K, Map, []), [V]), Map) end, #{}, Flatten_List)),
+
+  Key_List = ModuloTrabajo:gen_keys_reduce(Lotes),
 
   {ListaTrabajadores, NumTrabajadores} = get_trabajadores(SpecTrabajoReduce),
 
@@ -97,7 +97,8 @@ trabajador_map(Trabajo, Repartidor, Recolector) ->
 % Recolector Reduce----------------------------------------------------------
 recolector_reduce(0, Cliente, Lotes) ->
   io:format("recolector de reduce termino, enviando paquete al Cliente ~n"),
-  Cliente ! {pedido, lists:append(lists:map(fun({_,X}) -> [X] end, Lotes))};
+  Result = lists:append(lists:map(fun({_,X}) -> [X] end, Lotes)),
+  Cliente ! {pedido, Result};
 
 recolector_reduce(Pendientes, Cliente, Lotes) when Pendientes > 0 ->
   receive

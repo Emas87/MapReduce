@@ -10,10 +10,10 @@
 -author("jdsalazar").
 
 %% API
--export([gen_keys/1, map/1, reduce/1]).
+-export([gen_keys_map/1, gen_keys_reduce/1, map/1, reduce/1]).
 
 % gen_keys ---------------------------------------------------------
-gen_keys({FileName, NumChunks}) ->
+gen_keys_map({FileName, NumChunks}) ->
   Tuple_List = get_tuples_list_from_file(FileName),
   List_Length = length(Tuple_List),
   Base_num_elems = trunc(List_Length/NumChunks),
@@ -30,6 +30,12 @@ gen_chunks(Tuple_List, Base_num_elems, 0, Chunk_List) when length(Tuple_List) > 
 
 gen_chunks(Tuple_List, Base_num_elems, 0, Chunk_List) when length(Tuple_List) == Base_num_elems ->
   lists:reverse([Tuple_List|Chunk_List]).
+
+
+gen_keys_reduce(Lotes) ->
+  Flatten_List = lists:flatten(lists:append(lists:map(fun({_,X}) -> X end, Lotes))),
+  Key_List = maps:to_list(lists:foldl(fun({K, V}, Map) -> maps:put(K, lists:append(maps:get(K, Map, []), [V]), Map) end, #{}, Flatten_List)),
+  Key_List.
 
 % map ---------------------------------------------------------------
 
