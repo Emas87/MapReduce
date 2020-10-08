@@ -60,7 +60,7 @@ suma(ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Clie
 			      ignore.
 init([]) ->
     process_flag(trap_exit, true),
-		io:format("~p (~p) Empezando servidor ~n", [{local, ?MODULE}, self()]),
+		io:format("~p (~p) Empezando servidor ~n", [{global, ?MODULE}, self()]),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------

@@ -13,13 +13,8 @@
 -author("ema87").
 
 %% API
--export([start/0, stop/0, suma/6]).
+-export([suma/6]).
 
-start() ->
-  servidor:start_link().
-
-stop() ->
-  servidor:stop().
 
 suma(ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Cliente) ->
   servidor:suma(ModuloTrabajo, FileName, NumChunks, SpecTrabajoMap, SpecTrabajoReduce, Cliente).
