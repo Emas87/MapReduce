@@ -27,3 +27,29 @@ SpecTrabajoMap: Mismo significado que el parámetro "SpecTrabajo" en el arhcivo 
 SpecTrabajoReduce: Homólogo al parámetro anterior, pero en este caso es para indicar el número de workers para ejecutar las tareas Reduce, mientras que el parámetro anterior serían los workers que ejecutarían las tareas Map.
 
 Cliente: Mismo significado que en el arhcivo "mapreduce.erl" original.
+
+Problema #2
+Para correr se debe usar el servidor, luego ejecutar el cliente, esperar la respuesta y detener el servidor:
+
+>servidor:start_link().
+>cliente:suma(problema1, "tuplas.dat", 10, 5, 3, self()).
+>receive P -> P end.
+> servidor:stop().
+
+Problema #3
+Para correr se debe usar el sistema, luego ejecutar el cliente, esperar la respuesta y detener el sistema,
+(Al usar el comando del cliente se puede usar valores trampa, para povocar un fallo, la aplicacion va a seguir ejecutandose correctamente, si luego se pasa valores correctos,
+el resultado va a ser correcto):
+
+>sistema:start().
+>cliente:suma(problema1, "tuplas.dat", 10, 5, 3, self()).
+>receive P -> P end.
+> sistema:stop().
+
+Prueba de falla:
+>sistema:start().
+>cliente:suma(problema1, "tuplas.dat", valor, malo, falla, self()).
+% Aqui ya se usan valores correctos de nuevo, y debe funcionar bien.
+>cliente:suma(problema1, "tuplas.dat", 10, 5, 3, self()).
+>receive P -> P end.
+> sistema:stop().
