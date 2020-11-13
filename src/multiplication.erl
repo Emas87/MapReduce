@@ -10,7 +10,7 @@
 -author("ema").
 
 %% API
--export([m_mult_v/5, test/0]).
+-export([m_mult_v/5, test/0, string_to_number/1, number_to_string/1]).
 
 m_mult_v(_, _, N, Iteration, Output_vector) when Iteration > N ->
   Output_vector;

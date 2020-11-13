@@ -14,7 +14,7 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([suma/5, kill_worker/1]).
+-export([suma/5, kill_worker/1, mult/6]).
 
 
 -define(SPEC(),
@@ -62,7 +62,8 @@ init(Master_Sup_Pid) ->
 suma(ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce) ->
   gen_server:call(handler_server, {suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}).
 
-
+mult(ModuloTrabajo, FileName, N, K, SpecMap, SpecReduce) ->
+  gen_server:call(handler_server, {mult, ModuloTrabajo, FileName, N, K, SpecMap, SpecReduce}).
 
 kill_worker(map_task) ->
   gen_server:call(handler_server, {kill_worker, map_task});
@@ -133,6 +134,25 @@ update_execution_status(reduce_task, Batches, Results) ->
 
 
 
+handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
+  io:format("Operation MULT requested at handler_server... ~n"),
+  MT = ModuloTrabajo,
+  SpcMp = SpecMap,
+  SpcRdc = SpecReduce,
+  io:format("generating MAP batches ... ~n"),
+  {ok,M} = file:open(FileNameM, read),
+  {ok,V} = file:open(FileNameV, read),
+  {ok, M_Positions_list} = ModuloTrabajo:get_position_list(K, M, K, [[0]]),
+  {ok, V_Positions_list} = ModuloTrabajo:get_position_list(K, V, K, [[0]]),
+  % figuring out how many blocks are per row
+  Blocks_per_row = N/K,
+  MapBtchs = ModuloTrabajo:gen_keys_map({M, V, N, K}),
+  AvMapBat = lists:seq(1, length(MapBtchs)),
+  io:format("creating ~p MAP workers ... ~n", [SpecMap]),
+  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpecMap, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task, "map_task"),
+  {reply, ok, S#state{mod_trab = MT, spec_map=SpcMp, spec_reduce=SpcRdc, map_status = processing, reduce_status = pending,
+    map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapBtchs, map_results = [], available_map_batches=AvMapBat,
+    map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};
 
 handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
   io:format("Operation SUMA requested at handler_server... ~n"),

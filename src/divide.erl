@@ -10,7 +10,7 @@
 -author("ema87").
 
 %% API
--export([divide_m/3, divide_v/3]).
+-export([divide_m/3, divide_v/3, get_position_list/4]).
 
 get_position_list(K, S, 0, Pos_list) ->
     {ok, Last_Position} = file:position(S, cur),
@@ -90,8 +90,6 @@ get_chunk_matrix_from_file(S, ChunkI, ChunkJ, K, Blocks_per_row, Chunk_list, Ite
     {ok, String} = file:pread(S, Starting_pos, Ending_pos-Starting_pos),
     New_Chunk_list = lists:append(Chunk_list, [string:split(String, " ")]),
     get_chunk_matrix_from_file(S, ChunkI, ChunkJ, K, Blocks_per_row, New_Chunk_list, Iteration + 1, Positions_list).
-
-
 
 get_chunk_vector_from_file(S, Iteration, Positions_list) ->
     Position_in_list = Iteration,
