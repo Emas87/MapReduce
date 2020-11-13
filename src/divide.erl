@@ -63,12 +63,22 @@ get_all_chunks(Blocks_per_row, K, S, N, I, J, Positions_list) when J > Blocks_pe
     get_all_chunks(Blocks_per_row, K, S, N, I + 1, 1, Positions_list);
 get_all_chunks(Blocks_per_row, K, S, N, I, J, Positions_list) ->
     Chunk = get_chunk_matrix_from_file(S, I, J, K, Blocks_per_row, [], 1, Positions_list),
+    io:format("Chunk i=~p, j=~p: ~p ~n", [I,J,Chunk]),
     get_all_chunks(Blocks_per_row, K, S, N, I, J + 1, Positions_list).
+
+
+divide_v(K, Filename, N) ->
+    {ok,S} = file:open(Filename, read),
+    {ok, Positions_list} = get_position_list(K, S, K, [[0]]),
+    % figuring out how many blocks are per row
+    Blocks_per_row = N/K,
+    get_all_chunks(Blocks_per_row, K, S, N, Positions_list, 1).
 
 get_all_chunks(Blocks_per_row, _, _, _, _, Iteration) when Iteration > Blocks_per_row ->
     ok;
 get_all_chunks(Blocks_per_row, K, S, N, Positions_list, Iteration) ->
     Chunk = get_chunk_vector_from_file(S, Iteration, Positions_list),
+    io:format("Chunk i=~p: ~p ~n", [Iteration,Chunk]),
     get_all_chunks(Blocks_per_row, K, S, N, Positions_list, Iteration+1).
 
 get_chunk_matrix_from_file(_, _, _, K, _, Chunk_list, Iteration, _) when Iteration > K->
@@ -81,12 +91,7 @@ get_chunk_matrix_from_file(S, ChunkI, ChunkJ, K, Blocks_per_row, Chunk_list, Ite
     New_Chunk_list = lists:append(Chunk_list, [string:split(String, " ")]),
     get_chunk_matrix_from_file(S, ChunkI, ChunkJ, K, Blocks_per_row, New_Chunk_list, Iteration + 1, Positions_list).
 
-divide_v(K, Filename, N) ->
-    {ok,S} = file:open(Filename, read),
-    {ok, Positions_list} = get_position_list(K, S, K, [[0]]),
-    % figuring out how many blocks are per row
-    Blocks_per_row = N/K,
-    get_all_chunks(Blocks_per_row, K, S, N, Positions_list, 1).
+
 
 get_chunk_vector_from_file(S, Iteration, Positions_list) ->
     Position_in_list = Iteration,
