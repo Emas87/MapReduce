@@ -60,7 +60,7 @@ init(Master_Sup_Pid) ->
 
 
 suma(ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce) ->
-  gen_server:call(handler_server, {suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}).
+  gen_server:call(handler_server, {brete, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}).
 
 
 
@@ -134,8 +134,8 @@ update_execution_status(reduce_task, Batches, Results) ->
 
 
 
-handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
-  io:format("Operation SUMA requested at handler_server... ~n"),
+handle_call({brete, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
+  io:format("Operation BRETE requested at handler_server... ~n"),
   MT = ModuloTrabajo,
   SpcMp = SpecMap,
   SpcRdc = SpecReduce,
