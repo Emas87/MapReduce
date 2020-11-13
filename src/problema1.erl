@@ -10,7 +10,7 @@
 -author("jdsalazar").
 
 %% API
--export([gen_keys_map/1, gen_keys_reduce/1, map/1, reduce/1]).
+-export([gen_keys_map/1, gen_keys_reduce/1, map/1, reduce/1, process_final_result/1]).
 
 % gen_keys ---------------------------------------------------------
 gen_keys_map({FileName, NumChunks}) ->
@@ -62,3 +62,7 @@ get_tuples_list_from_file(File_Name) ->
   {ok, Tuple_List} = file:consult(File_Name),
   Tuple_List.
 %  io:fwrite("~p~n", [Tuple_List]).
+
+
+process_final_result(Lotes) ->
+  lists:append(lists:map(fun({_,X}) -> [X] end, Lotes)).
