@@ -24,8 +24,13 @@ get_position_list(K, S, 0, Pos_list) ->
 get_position_list(K, S, Count, Pos_list) ->
     {ok, MP} = re:compile("\n"),
     case file:read(S, 1) of
-    eof ->
-        {ok, Pos_list};
+        eof ->
+            {ok, Last_Position} = file:position(S, cur),
+            Last_element = lists:last(Pos_list),
+            Prev_list = lists:droplast(Pos_list),
+            New_element = lists:append(Last_element,[Last_Position]),
+            New_Pos_List = lists:append(Prev_list,[New_element]),
+            {ok, New_Pos_List};
         {ok, Character} ->
             Is_space = string:equal(Character, " "),
             if
@@ -59,9 +64,12 @@ get_all_chunks(Blocks_per_row, K, S, N, I, J, Positions_list) when J > Blocks_pe
 get_all_chunks(Blocks_per_row, K, S, N, I, J, Positions_list) ->
     Chunk = get_chunk_matrix_from_file(S, I, J, K, Blocks_per_row, [], 1, Positions_list),
     get_all_chunks(Blocks_per_row, K, S, N, I, J + 1, Positions_list).
-get_all_chunks(Blocks_per_row, K, S, N, I, Positions_list) ->
-    Chunk = get_chunk_vector_from_file(S, I, K, Blocks_per_row, [], 1, Positions_list),
-    get_all_chunks(Blocks_per_row, K, S, N, I, Positions_list).
+
+get_all_chunks(Blocks_per_row, _, _, _, _, Iteration) when Iteration > Blocks_per_row ->
+    ok;
+get_all_chunks(Blocks_per_row, K, S, N, Positions_list, Iteration) ->
+    Chunk = get_chunk_vector_from_file(S, Iteration, Positions_list),
+    get_all_chunks(Blocks_per_row, K, S, N, Positions_list, Iteration+1).
 
 get_chunk_matrix_from_file(_, _, _, K, _, Chunk_list, Iteration, _) when Iteration > K->
     Chunk_list;
@@ -78,14 +86,12 @@ divide_v(K, Filename, N) ->
     {ok, Positions_list} = get_position_list(K, S, K, [[0]]),
     % figuring out how many blocks are per row
     Blocks_per_row = N/K,
-    get_all_chunks(Blocks_per_row, K, S, N, 1, Positions_list).
+    get_all_chunks(Blocks_per_row, K, S, N, Positions_list, 1).
 
-get_chunk_vector_from_file(_, _, K, Blocks_per_row, Chunk_list, Iteration, _) when Iteration > Blocks_per_row->
-    Chunk_list;
-get_chunk_vector_from_file(S, ChunkI, K, Blocks_per_row, Chunk_list, Iteration, Positions_list) ->
-    Position_in_list = ChunkI,
+get_chunk_vector_from_file(S, Iteration, Positions_list) ->
+    Position_in_list = Iteration,
     [Starting_pos|Ending_pos_list] = lists:nth(round(Position_in_list), Positions_list),
     [Ending_pos|_] = Ending_pos_list,
-    {ok, String} = file:pread(S, Starting_pos, Ending_pos-Starting_pos),
-    New_Chunk_list = lists:append(Chunk_list, [string:split(String, "\n")]),
-    get_chunk_vector_from_file(S, ChunkI, K, Blocks_per_row, New_Chunk_list, Iteration + 1, Positions_list).
+    {ok, String} = file:pread(S, Starting_pos, Ending_pos - Starting_pos),
+    New_Chunk_list = string:split(String, "\n"),
+    New_Chunk_list.
