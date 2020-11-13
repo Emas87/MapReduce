@@ -10,7 +10,7 @@
 -author("ema87").
 
 %% API
--export([divide_m/3, divide_v/3, get_position_list/4]).
+-export([divide_m/3, divide_v/3, get_position_list/4, get_chunk_matrix_from_file/8, get_chunk_vector_from_file/3]).
 
 get_position_list(K, S, 0, Pos_list) ->
     {ok, Last_Position} = file:position(S, cur),

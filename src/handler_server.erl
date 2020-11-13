@@ -14,7 +14,7 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([suma/5, kill_worker/1, mult/6]).
+-export([suma/5, kill_worker/1, mult/5]).
 
 
 -define(SPEC(),
@@ -60,10 +60,10 @@ init(Master_Sup_Pid) ->
 
 
 suma(ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce) ->
-  gen_server:call(handler_server, {brete, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}).
+  gen_server:call(handler_server, {suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}).
 
-mult(ModuloTrabajo, FileName, N, K, SpecMap, SpecReduce) ->
-  gen_server:call(handler_server, {mult, ModuloTrabajo, FileName, N, K, SpecMap, SpecReduce}).
+mult(ModuloTrabajo, FileNameM,  FileNameV, N, K) ->
+  gen_server:call(handler_server, {mult, ModuloTrabajo, FileNameM, FileNameV, N, K}).
 
 kill_worker(map_task) ->
   gen_server:call(handler_server, {kill_worker, map_task});
@@ -134,28 +134,28 @@ update_execution_status(reduce_task, Batches, Results) ->
 
 
 
-handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
+handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K}, From, S = #state{worker_sup=WrkSup}) ->
   io:format("Operation MULT requested at handler_server... ~n"),
   MT = ModuloTrabajo,
-  SpcMp = SpecMap,
-  SpcRdc = SpecReduce,
+  Blocks_per_row = N/K,
+  SpcMp = Blocks_per_row*Blocks_per_row,
+  SpcRdc = Blocks_per_row,
   io:format("generating MAP batches ... ~n"),
   {ok,M} = file:open(FileNameM, read),
   {ok,V} = file:open(FileNameV, read),
   {ok, M_Positions_list} = ModuloTrabajo:get_position_list(K, M, K, [[0]]),
   {ok, V_Positions_list} = ModuloTrabajo:get_position_list(K, V, K, [[0]]),
   % figuring out how many blocks are per row
-  Blocks_per_row = N/K,
-  MapBtchs = ModuloTrabajo:gen_keys_map({M, V, N, K}),
+  MapBtchs = ModuloTrabajo:gen_keys_map(Blocks_per_row),
   AvMapBat = lists:seq(1, length(MapBtchs)),
-  io:format("creating ~p MAP workers ... ~n", [SpecMap]),
-  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpecMap, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task, "map_task"),
+  io:format("creating ~p MAP workers ... ~n", [SpcMp]),
+  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpcMp, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task, "map_task"),
   {reply, ok, S#state{mod_trab = MT, spec_map=SpcMp, spec_reduce=SpcRdc, map_status = processing, reduce_status = pending,
     map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapBtchs, map_results = [], available_map_batches=AvMapBat,
     map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};
 
-handle_call({brete, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
-  io:format("Operation BRETE requested at handler_server... ~n"),
+handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
+  io:format("Operation SUMA requested at handler_server... ~n"),
   MT = ModuloTrabajo,
   SpcMp = SpecMap,
   SpcRdc = SpecReduce,
