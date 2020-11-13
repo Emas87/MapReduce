@@ -60,7 +60,7 @@ init(Master_Sup_Pid) ->
 
 
 suma(ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce) ->
-  gen_server:call(handler_server, {suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}).
+  gen_server:call(handler_server, {brete, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}).
 
 mult(ModuloTrabajo, FileName, N, K, SpecMap, SpecReduce) ->
   gen_server:call(handler_server, {mult, ModuloTrabajo, FileName, N, K, SpecMap, SpecReduce}).
@@ -154,8 +154,8 @@ handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K, SpecMap, SpecRedu
     map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapBtchs, map_results = [], available_map_batches=AvMapBat,
     map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};
 
-handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
-  io:format("Operation SUMA requested at handler_server... ~n"),
+handle_call({brete, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
+  io:format("Operation BRETE requested at handler_server... ~n"),
   MT = ModuloTrabajo,
   SpcMp = SpecMap,
   SpcRdc = SpecReduce,

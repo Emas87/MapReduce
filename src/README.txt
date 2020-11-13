@@ -53,3 +53,22 @@ Prueba de falla:
 >cliente:suma(problema1, "tuplas.dat", 10, 5, 3, self()).
 >receive P -> P end.
 > sistema:stop().
+
+
+
+
+PROBLEMA 3
+
+
+application:start(suma_app).
+
+
+handler_server:suma(problema1, "tuplas.dat", 10, 3, 2).
+
+
+handler_server:kill_worker(map_task).
+
+handler_server:kill_worker(reduce_task).
+
+
+application:stop(suma_app).
