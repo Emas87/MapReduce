@@ -178,7 +178,7 @@ handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K}, From, S = #state
   MapParameters = [MapBtchs, M, V , K, Blocks_per_row, M_Positions_list, V_Positions_list],
   AvMapBat = lists:seq(1, length(MapBtchs)),
   io:format("creating ~p MAP workers ... ~n", [SpcMp]),
-  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpcMp, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task, "map_@task"),
+  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpcMp, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task, "map_task"),
   {reply, ok, S#state{mod_trab = MT, spec_map=SpcMp, spec_reduce=SpcRdc, map_status = processing, reduce_status = pending,
     map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapParameters, map_results = [], available_map_batches=AvMapBat,
     map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};

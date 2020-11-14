@@ -29,14 +29,35 @@ get_keys(Blocks_per_row, I, J, Key_list) ->
   lists:append([{I,J}], Output_list).
 
 gen_keys_reduce(Parameters) ->
-  [Tuple|_] = Parameters,
-  MapParameters = element(1,Tuple),
-  MapResult = element(2,Tuple),
-  {ReduceKey,Vector} = MapResult,
-  [Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV] = MapParameters,
-  lists:seq(1, length(Blocks_per_row)).
-  %lists:seq(1, length(Blocks_per_row)).
+  List = get_key_lists(Parameters),
+  % Dict1 = dict:from_list(List),
+  Dict = initialize_dict(List, dict:new()),
+  New_List = dict:to_list(Dict),
+  New_List.
 
+initialize_dict(List, Dict) when length(List) > 0 ->
+  [{Key, Vector}| Rest_of_list] = List,
+  Dict2 = append(Key,Vector, Dict),
+  initialize_dict(Rest_of_list, Dict2);
+
+initialize_dict([], Dict) -> Dict.
+
+append(Key, Val, D) ->
+  dict:update(Key, fun (Old) -> Old ++ [Val] end, [Val], D).
+
+get_key_lists(Parameters) when length(Parameters) > 1->
+  [Tuple| Rest_of_List] = Parameters,
+  MapResult = element(2,Tuple),
+  % {ReduceKey,Vector} = MapResult,
+  lists:append([MapResult],get_key_lists(Rest_of_List));
+
+get_key_lists(Parameters) ->
+  [Tuple| _] = Parameters,
+  % MapParameters = element(1,Tuple),
+  MapResult = element(2,Tuple),
+  % {ReduceKey,Vector} = MapResult,
+  % [Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV] = MapParameters,
+  [MapResult].
 
 % map ---------------------------------------------------------------
 
@@ -53,7 +74,8 @@ compute(Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV) ->
 % reduce ------------------------------------------------------------
 reduce(Tuple) ->
   {Key, Vector_list} = Tuple,
-  {Key, suma_vectores(Vector_list)}.
+  Resultado = {Key, suma_vectores(Vector_list)},
+  Resultado.
 
 suma_vectores(Vector_list) when length(Vector_list) > 1 ->
   [Vector1 | Rest_of_vectors] = Vector_list,
@@ -75,10 +97,22 @@ suma_2_vectores(Vector1, Vector2, Output_vector) when length(Vector1) > 0 ->
 
 suma_2_vectores([], [], Output_vector) -> Output_vector.
 
-
-
 process_final_result(Lotes) ->
   Lotes.
+%%Lotes = [
+%%	{
+%%		{1,[["0","96"],["0","69"],["80","79"]]},
+%%		{1,["80","244"]}
+%%	},
+%%	{
+%%		{2,[["98","0"],["79","159"],["60","60"]]},
+%%		{2,["237","219"]}
+%%	},
+%%	{
+%%		{3,[["0","0"],["96","0"],["0","0"]]},
+%%		{3,["96","0"]}
+%%	}
+%%]
 
 
 get_position_list(K, S, Count, Pos_list) ->
