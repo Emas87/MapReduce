@@ -28,10 +28,15 @@ get_keys(Blocks_per_row, I, J, Key_list) ->
   Output_list = get_keys(Blocks_per_row, I, J+1, Key_list),
   lists:append([{I,J}], Output_list).
 
-gen_keys_reduce(Lotes) ->
-  Flatten_List = lists:flatten(lists:append(lists:map(fun({_,X}) -> X end, Lotes))),
-  Key_List = maps:to_list(lists:foldl(fun({K, V}, Map) -> maps:put(K, lists:append(maps:get(K, Map, []), [V]), Map) end, #{}, Flatten_List)),
-  Key_List.
+gen_keys_reduce(Parameters) ->
+  [Tuple|_] = Parameters,
+  MapParameters = element(1,Tuple),
+  MapResult = element(2,Tuple),
+  {ReduceKey,Vector} = MapResult,
+  [Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV] = MapParameters,
+  lists:seq(1, length(Blocks_per_row)).
+  %lists:seq(1, length(Blocks_per_row)).
+
 
 % map ---------------------------------------------------------------
 

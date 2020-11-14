@@ -165,7 +165,7 @@ update_execution_status(reduce_task, Batches, Results) ->
 handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K}, From, S = #state{worker_sup=WrkSup}) ->
   io:format("Operation MULT requested at handler_server... ~n"),
   MT = ModuloTrabajo,
-  Blocks_per_row = N/K,
+  Blocks_per_row = round(N/K),
   SpcMp = Blocks_per_row*Blocks_per_row,
   SpcRdc = Blocks_per_row,
   io:format("generating MAP batches ... ~n"),
@@ -178,7 +178,7 @@ handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K}, From, S = #state
   MapParameters = [MapBtchs, M, V , K, Blocks_per_row, M_Positions_list, V_Positions_list],
   AvMapBat = lists:seq(1, length(MapBtchs)),
   io:format("creating ~p MAP workers ... ~n", [SpcMp]),
-  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpcMp, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task_m, "map_@task"),
+  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpcMp, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task, "map_@task"),
   {reply, ok, S#state{mod_trab = MT, spec_map=SpcMp, spec_reduce=SpcRdc, map_status = processing, reduce_status = pending,
     map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapParameters, map_results = [], available_map_batches=AvMapBat,
     map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};
@@ -198,25 +198,25 @@ handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, Fro
     map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};
 
 
-handle_call({request_task, map_task}, From, S = #state{map_worker_regsitry = MapReg, available_map_batches = AvMapBat,
-  map_batches = MapBtchs, map_status = Mp_St, map_refs = MapRefs, killable_map = KillMap}) ->
-  {From_Pid, _} = From,
-  io:format("MAP task requested from worker: ~p ... ~n", [From_Pid]),
-  if
-    Mp_St == pending ->
-      io:format("MAP tasks NOT READY, WAIT response ... ~n"),
-      {reply, not_ready_wait, S};
-    Mp_St == completed ->
-      io:format("MAP tasks already COMPLETED, no_more_tasks response ... ~n"),
-      {reply, no_more_tasks, S};
-    true ->
-      io:format("MAP available batches (prior to assigning): ~p ... ~n", [length(AvMapBat)]),
-      {Response, MR, AMB, MpRfs, Kll_Mp} = assign_batch_to_worker(From_Pid, MapReg, AvMapBat, MapBtchs, MapRefs, KillMap),
-      io:format("MAP available batches (after assigning): ~p ... ~n", [length(AMB)]),
-      {reply, Response, S#state{map_worker_regsitry = MR, available_map_batches = AMB, map_refs = MpRfs, killable_map = Kll_Mp}}
-  end;
+%%handle_call({request_task, map_task}, From, S = #state{map_worker_regsitry = MapReg, available_map_batches = AvMapBat,
+%%  map_batches = MapBtchs, map_status = Mp_St, map_refs = MapRefs, killable_map = KillMap}) ->
+%%  {From_Pid, _} = From,
+%%  io:format("MAP task requested from worker: ~p ... ~n", [From_Pid]),
+%%  if
+%%    Mp_St == pending ->
+%%      io:format("MAP tasks NOT READY, WAIT response ... ~n"),
+%%      {reply, not_ready_wait, S};
+%%    Mp_St == completed ->
+%%      io:format("MAP tasks already COMPLETED, no_more_tasks response ... ~n"),
+%%      {reply, no_more_tasks, S};
+%%    true ->
+%%      io:format("MAP available batches (prior to assigning): ~p ... ~n", [length(AvMapBat)]),
+%%      {Response, MR, AMB, MpRfs, Kll_Mp} = assign_batch_to_worker(From_Pid, MapReg, AvMapBat, MapBtchs, MapRefs, KillMap),
+%%      io:format("MAP available batches (after assigning): ~p ... ~n", [length(AMB)]),
+%%      {reply, Response, S#state{map_worker_regsitry = MR, available_map_batches = AMB, map_refs = MpRfs, killable_map = Kll_Mp}}
+%%  end;
 
-handle_call({request_task, map_task_m}, From, S = #state{map_worker_regsitry = MapReg, available_map_batches = AvMapBat,
+handle_call({request_task, map_task}, From, S = #state{map_worker_regsitry = MapReg, available_map_batches = AvMapBat,
   map_batches = MapParameters, map_status = Mp_St, map_refs = MapRefs, killable_map = KillMap}) ->
   {From_Pid, _} = From,
   io:format("MAP task requested from worker: ~p ... ~n", [From_Pid]),

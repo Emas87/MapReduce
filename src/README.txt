@@ -72,3 +72,21 @@ handler_server:kill_worker(reduce_task).
 
 
 application:stop(suma_app).
+
+
+
+PROBLEMA 45
+
+
+application:start(suma_app).
+
+
+handler_server:mult(problema45, "matrix2.dat", "vector2.dat", 6, 2).
+
+
+handler_server:kill_worker(map_task).
+
+handler_server:kill_worker(reduce_task).
+
+
+application:stop(suma_app).
