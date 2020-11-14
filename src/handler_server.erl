@@ -96,6 +96,34 @@ assign_batch_to_worker(Wrk_Pid, WrkMap, AvBat, Btchs, Refs, Killable_List) ->
       end
   end.
 
+assign_batch_to_worker(mult, Wrk_Pid, WrkMap, AvBat, MapParameters, Refs, Killable_List) ->
+  io:format("assigning batch to worker: ~p... ~n", [Wrk_Pid]),
+  if
+    length(AvBat) == 0 ->
+      io:format("no more tasks for worker: ~p... ~n", [Wrk_Pid]),
+      {no_more_tasks, WrkMap, AvBat, Refs, Killable_List};
+    true ->  %%length(AvBat) > 0
+      % Btchs = [Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV]
+       [Keys, M, V , K, Blocks_per_row, M_Positions_list, V_Positions_list] = MapParameters,
+      case maps:is_key(Wrk_Pid, WrkMap) of
+        true ->
+          [H|T] = AvBat,
+          Key = lists:nth(H, Keys),
+          Btch = [Key, M, V , K, Blocks_per_row, M_Positions_list, V_Positions_list],
+          io:format("assigning batch: ~p to worker: ~p... ~n", [H, Wrk_Pid]),
+          {Btch, maps:put(Wrk_Pid, H, WrkMap), T, Refs, Killable_List};
+        false ->
+          io:format("worker: ~p was NOT registered, registiring right now so tasks can be assigned... ~n", [Wrk_Pid]),
+          Ref = erlang:monitor(process, Wrk_Pid),
+          Refs = gb_sets:add(Ref,Refs),
+          [H|T] = AvBat,
+          Key = lists:nth(H, Keys),
+          Btch = [Key, M, V , K, Blocks_per_row, M_Positions_list, V_Positions_list],
+          io:format("assigning batch: ~p to new registered worker: ~p... ~n", [H, Wrk_Pid]),
+          {Btch, maps:put(Wrk_Pid, H, WrkMap), T, Refs, [Wrk_Pid|Killable_List]}
+      end
+  end.
+
 
 create_workers(0, Refs, WrkMap, _, Active, _, _, _) ->
   {Refs, WrkMap, Active};
@@ -147,11 +175,12 @@ handle_call({mult, ModuloTrabajo, FileNameM,  FileNameV, N, K}, From, S = #state
   {ok, V_Positions_list} = ModuloTrabajo:get_position_list(K, V, K, [[0]]),
   % figuring out how many blocks are per row
   MapBtchs = ModuloTrabajo:gen_keys_map(Blocks_per_row),
+  MapParameters = [MapBtchs, M, V , K, Blocks_per_row, M_Positions_list, V_Positions_list],
   AvMapBat = lists:seq(1, length(MapBtchs)),
   io:format("creating ~p MAP workers ... ~n", [SpcMp]),
-  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpcMp, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task, "map_task"),
+  {Map_Refs, Map_Reg, Map_Act_Cnt} = create_workers(SpcMp, gb_sets:empty(), #{}, WrkSup, 0, ModuloTrabajo, map_task_m, "map_@task"),
   {reply, ok, S#state{mod_trab = MT, spec_map=SpcMp, spec_reduce=SpcRdc, map_status = processing, reduce_status = pending,
-    map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapBtchs, map_results = [], available_map_batches=AvMapBat,
+    map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapParameters, map_results = [], available_map_batches=AvMapBat,
     map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};
 
 handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, From, S = #state{worker_sup=WrkSup}) ->
@@ -168,6 +197,7 @@ handle_call({suma, ModuloTrabajo, FileName, NumChunks, SpecMap, SpecReduce}, Fro
     map_refs = Map_Refs, map_worker_regsitry = Map_Reg, map_batches=MapBtchs, map_results = [], available_map_batches=AvMapBat,
     map_workers_active_cnt= Map_Act_Cnt, send_to = From, killable_map = maps:keys(Map_Reg)}};
 
+
 handle_call({request_task, map_task}, From, S = #state{map_worker_regsitry = MapReg, available_map_batches = AvMapBat,
   map_batches = MapBtchs, map_status = Mp_St, map_refs = MapRefs, killable_map = KillMap}) ->
   {From_Pid, _} = From,
@@ -182,6 +212,24 @@ handle_call({request_task, map_task}, From, S = #state{map_worker_regsitry = Map
     true ->
       io:format("MAP available batches (prior to assigning): ~p ... ~n", [length(AvMapBat)]),
       {Response, MR, AMB, MpRfs, Kll_Mp} = assign_batch_to_worker(From_Pid, MapReg, AvMapBat, MapBtchs, MapRefs, KillMap),
+      io:format("MAP available batches (after assigning): ~p ... ~n", [length(AMB)]),
+      {reply, Response, S#state{map_worker_regsitry = MR, available_map_batches = AMB, map_refs = MpRfs, killable_map = Kll_Mp}}
+  end;
+
+handle_call({request_task, map_task_m}, From, S = #state{map_worker_regsitry = MapReg, available_map_batches = AvMapBat,
+  map_batches = MapParameters, map_status = Mp_St, map_refs = MapRefs, killable_map = KillMap}) ->
+  {From_Pid, _} = From,
+  io:format("MAP task requested from worker: ~p ... ~n", [From_Pid]),
+  if
+    Mp_St == pending ->
+      io:format("MAP tasks NOT READY, WAIT response ... ~n"),
+      {reply, not_ready_wait, S};
+    Mp_St == completed ->
+      io:format("MAP tasks already COMPLETED, no_more_tasks response ... ~n"),
+      {reply, no_more_tasks, S};
+    true ->
+      io:format("MAP available batches (prior to assigning): ~p ... ~n", [length(AvMapBat)]),
+      {Response, MR, AMB, MpRfs, Kll_Mp} = assign_batch_to_worker(mult, From_Pid, MapReg, AvMapBat, MapParameters, MapRefs, KillMap),
       io:format("MAP available batches (after assigning): ~p ... ~n", [length(AMB)]),
       {reply, Response, S#state{map_worker_regsitry = MR, available_map_batches = AMB, map_refs = MpRfs, killable_map = Kll_Mp}}
   end;

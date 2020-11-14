@@ -10,7 +10,7 @@
 -author("emas87").
 
 %% API
--export([gen_keys_map/1, gen_keys_reduce/1, map/7, reduce/1, process_final_result/1, get_position_list/4, test/0]).
+-export([gen_keys_map/1, gen_keys_reduce/1, map/1, reduce/1, process_final_result/1, get_position_list/4, test/0]).
 
 % gen_keys ---------------------------------------------------------
 gen_keys_map(Blocks_per_row) ->
@@ -35,7 +35,7 @@ gen_keys_reduce(Lotes) ->
 
 % map ---------------------------------------------------------------
 
-map(Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV) ->
+map([Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV]) ->
   compute(Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV).
 
 compute(Key, M, V , K, Blocks_per_row, Positions_listM, Positions_listV) ->
