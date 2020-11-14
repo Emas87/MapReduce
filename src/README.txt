@@ -83,6 +83,8 @@ application:start(suma_app).
 
 handler_server:mult(problema45, "matrix2.dat", "vector2.dat", 6, 2).
 
+receive P -> P end.
+
 
 handler_server:kill_worker(map_task).
 
