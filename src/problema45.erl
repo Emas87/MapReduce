@@ -98,7 +98,25 @@ suma_2_vectores(Vector1, Vector2, Output_vector) when length(Vector1) > 0 ->
 suma_2_vectores([], [], Output_vector) -> Output_vector.
 
 process_final_result(Lotes) ->
-  Lotes.
+  List = get_real_result(Lotes, []),
+  Dict = dict:from_list(List),
+  New_List = order_dict(dict:size(Dict), Dict, [], 1),
+  New_List.
+
+order_dict(Size, Dict, Output_list, Iter) when Iter =< Size ->
+  {ok, Value} = dict:find(Iter, Dict),
+  New_OutputList = order_dict(Size, Dict, Output_list, Iter + 1),
+  lists:append(Value, New_OutputList);
+
+order_dict(_, _, _, _) -> [].
+
+get_real_result(List, OutputList) when length(List) > 0 ->
+  [First_Tuple| Rest_of_list] = List,
+  {_, Real_result} = First_Tuple,
+  New_OutputList = get_real_result(Rest_of_list, OutputList),
+  lists:append([Real_result], New_OutputList);
+
+get_real_result([], OutputList) -> OutputList.
 %%Lotes = [
 %%	{
 %%		{1,[["0","96"],["0","69"],["80","79"]]},

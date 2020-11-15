@@ -88,7 +88,7 @@ get_chunk_matrix_from_file(S, ChunkI, ChunkJ, K, Blocks_per_row, Chunk_list, Ite
     [Starting_pos|Ending_pos_list] = lists:nth(round(Position_in_list), Positions_list),
     [Ending_pos|_] = Ending_pos_list,
     {ok, String} = file:pread(S, Starting_pos, Ending_pos-Starting_pos),
-    New_Chunk_list = lists:append(Chunk_list, [string:split(String, " ")]),
+    New_Chunk_list = lists:append(Chunk_list, [string:split(String, " ", all)]),
     get_chunk_matrix_from_file(S, ChunkI, ChunkJ, K, Blocks_per_row, New_Chunk_list, Iteration + 1, Positions_list).
 
 get_chunk_vector_from_file(S, Iteration, Positions_list) ->
@@ -96,5 +96,5 @@ get_chunk_vector_from_file(S, Iteration, Positions_list) ->
     [Starting_pos|Ending_pos_list] = lists:nth(round(Position_in_list), Positions_list),
     [Ending_pos|_] = Ending_pos_list,
     {ok, String} = file:pread(S, Starting_pos, Ending_pos - Starting_pos),
-    New_Chunk_list = string:split(String, "\n"),
+    New_Chunk_list = string:split(String, "\n", all),
     New_Chunk_list.
